@@ -1,16 +1,19 @@
 package com.tanmoy.UserService.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Entity
-@Table(name = "micer_users")
+@Table(name = "micro_users")
 @Setter
 @Getter
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
     @Id
     @Column(name = "user_id")
@@ -21,4 +24,6 @@ public class User {
     private String email;
     @Column(name = "about")
     private String about;
+    @Transient
+    private List<Rating> ratingOfUser;
 }
