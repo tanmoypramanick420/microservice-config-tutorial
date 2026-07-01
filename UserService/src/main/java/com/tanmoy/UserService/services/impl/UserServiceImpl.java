@@ -1,5 +1,6 @@
 package com.tanmoy.UserService.services.impl;
 
+import com.tanmoy.UserService.entities.Hotel;
 import com.tanmoy.UserService.entities.Rating;
 import com.tanmoy.UserService.entities.User;
 import com.tanmoy.UserService.exceptions.UserNotFoundException;
@@ -12,8 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -36,15 +39,32 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public List<User> getAllUser() {
-        return userRepository.findAll();
+        List<User> allUsers = userRepository.findAll();
+        for (User u : allUsers) {
+            Rating[] ratingsOfUser = restTemplate.getForObject("http://RATING-SERVICE/ratings/users/" + u.getUserId(), Rating[].class);
+            List<Rating> ratings = Arrays.stream(ratingsOfUser).toList();
+            List<Rating> ratingList = ratings.stream().map(rating -> {
+                Hotel hotel = restTemplate.getForObject("http://HOTEL-SERVICE/hotels/" + rating.getHotelId(), Hotel.class);
+                rating.setHotel(hotel);
+                return rating;
+            }).collect(Collectors.toList());
+            u.setRatingOfUser(ratingList);
+        }
+        return allUsers;
     }
 
     @Override
     public User getUserById(String userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found with this Id:" + userId));
-        ArrayList<Rating> ratingOfUser = restTemplate.getForObject("http://localhost:8083/ratings/users/" + user.getUserId(),ArrayList.class);
-        logger.info("{ }", ratingOfUser);
-        user.setRatingOfUser(ratingOfUser);
+        Rating[] ratingsOfUser = restTemplate.getForObject("http://RATING-SERVICE/ratings/users/" + user.getUserId(), Rating[].class);
+        List<Rating> ratings = Arrays.stream(ratingsOfUser).toList();
+        List<Rating> ratingList = ratings.stream().map(rating -> {
+            Hotel hotel = restTemplate.getForObject("http://HOTEL-SERVICE/hotels/" + rating.getHotelId(), Hotel.class);
+            rating.setHotel(hotel);
+            return rating;
+        }).collect(Collectors.toList());
+        logger.info("{ }", ratingsOfUser);
+        user.setRatingOfUser(ratingList);
         return user;
     }
 

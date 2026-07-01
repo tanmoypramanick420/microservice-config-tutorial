@@ -1,6 +1,6 @@
 spring:
   application:
-    name: RATING-SERVICE
+    name: HOTEL-SERVICE
 
 
   datasource:
