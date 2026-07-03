@@ -4,6 +4,8 @@ import com.tanmoy.UserService.entities.Hotel;
 import com.tanmoy.UserService.entities.Rating;
 import com.tanmoy.UserService.entities.User;
 import com.tanmoy.UserService.exceptions.UserNotFoundException;
+import com.tanmoy.UserService.external.services.HotelService;
+import com.tanmoy.UserService.external.services.RatingService;
 import com.tanmoy.UserService.repositories.UserRepository;
 import com.tanmoy.UserService.services.UserService;
 import org.slf4j.Logger;
@@ -27,6 +29,12 @@ public class UserServiceImpl implements UserService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private HotelService hotelService;
+
+    @Autowired
+    private RatingService ratingService;
+
 
     private Logger logger = LoggerFactory.getLogger(UserServiceImpl.class);
 
@@ -40,11 +48,22 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<User> getAllUser() {
         List<User> allUsers = userRepository.findAll();
+//        for (User u : allUsers) {
+//            Rating[] ratingsOfUser = restTemplate.getForObject("http://RATING-SERVICE/ratings/users/" + u.getUserId(), Rating[].class);
+//            List<Rating> ratings = Arrays.stream(ratingsOfUser).toList();
+//            List<Rating> ratingList = ratings.stream().map(rating -> {
+//                Hotel hotel = restTemplate.getForObject("http://HOTEL-SERVICE/hotels/" + rating.getHotelId(), Hotel.class);
+//                rating.setHotel(hotel);
+//                return rating;
+//            }).collect(Collectors.toList());
+//            u.setRatingOfUser(ratingList);
+//        }
+
         for (User u : allUsers) {
-            Rating[] ratingsOfUser = restTemplate.getForObject("http://RATING-SERVICE/ratings/users/" + u.getUserId(), Rating[].class);
+            Rating[] ratingsOfUser = ratingService.getRatingsByUserId(u.getUserId()).getBody().toArray(new Rating[0]);
             List<Rating> ratings = Arrays.stream(ratingsOfUser).toList();
             List<Rating> ratingList = ratings.stream().map(rating -> {
-                Hotel hotel = restTemplate.getForObject("http://HOTEL-SERVICE/hotels/" + rating.getHotelId(), Hotel.class);
+                Hotel hotel = hotelService.getHotelById(rating.getHotelId());
                 rating.setHotel(hotel);
                 return rating;
             }).collect(Collectors.toList());
@@ -56,10 +75,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public User getUserById(String userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found with this Id:" + userId));
-        Rating[] ratingsOfUser = restTemplate.getForObject("http://RATING-SERVICE/ratings/users/" + user.getUserId(), Rating[].class);
+//        Rating[] ratingsOfUser = restTemplate.getForObject("http://RATING-SERVICE/ratings/users/" + user.getUserId(), Rating[].class);
+        Rating[] ratingsOfUser = ratingService.getRatingsByUserId(userId).getBody().toArray(new Rating[0]);
         List<Rating> ratings = Arrays.stream(ratingsOfUser).toList();
         List<Rating> ratingList = ratings.stream().map(rating -> {
-            Hotel hotel = restTemplate.getForObject("http://HOTEL-SERVICE/hotels/" + rating.getHotelId(), Hotel.class);
+//            Hotel hotel = restTemplate.getForObject("http://HOTEL-SERVICE/hotels/" + rating.getHotelId(), Hotel.class);
+            Hotel hotel = hotelService.getHotelById(rating.getHotelId());
             rating.setHotel(hotel);
             return rating;
         }).collect(Collectors.toList());
@@ -67,6 +88,7 @@ public class UserServiceImpl implements UserService {
         user.setRatingOfUser(ratingList);
         return user;
     }
+
 
     @Override
     public User updateUser(String userId) {
