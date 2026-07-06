@@ -8,9 +8,12 @@ import com.tanmoy.UserService.external.services.HotelService;
 import com.tanmoy.UserService.external.services.RatingService;
 import com.tanmoy.UserService.repositories.UserRepository;
 import com.tanmoy.UserService.services.UserService;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -73,6 +76,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @CircuitBreaker(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
     public User getUserById(String userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found with this Id:" + userId));
 //        Rating[] ratingsOfUser = restTemplate.getForObject("http://RATING-SERVICE/ratings/users/" + user.getUserId(), Rating[].class);
@@ -87,6 +91,17 @@ public class UserServiceImpl implements UserService {
         logger.info("{ }", ratingsOfUser);
         user.setRatingOfUser(ratingList);
         return user;
+    }
+
+    public ResponseEntity<User> ratingHotelFallback(String userId, Exception e) {
+        logger.info("Fallback Is Executed Because Service Is Down!", e.getMessage());
+        User user = User.builder().email("dummy@gmail.com")
+                .name("Dummy")
+                .about("This user is created dummy because some service is down")
+                .userId("1234")
+                .build();
+        return new ResponseEntity<>(user, HttpStatus.INTERNAL_SERVER_ERROR);
+
     }
 
 

@@ -24,12 +24,36 @@ eureka:
     prefer-ip-address: true
   client:
     fetch-registry: true
-
     service-url:
       defaultZone: http://localhost:8761/eureka
 
 server:
   port: 8081
+
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+resilience4j:
+  circuitbreaker:
+    instance:
+      ratingHotelBreaker:
+        registerHealthIndicator: true
+        eventConsumerBufferSize: 10
+        failureRateThresold: 50
+        minimumNumerOfCalls: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 6s
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowSize: 10
+        slidingWindowType: COUNT_BASED
+
 
 
 
