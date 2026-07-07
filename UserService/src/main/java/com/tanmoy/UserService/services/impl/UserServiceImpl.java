@@ -76,7 +76,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @CircuitBreaker(name = "ratingHotelBreaker", fallbackMethod = "ratingHotelFallback")
     public User getUserById(String userId) {
         User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found with this Id:" + userId));
 //        Rating[] ratingsOfUser = restTemplate.getForObject("http://RATING-SERVICE/ratings/users/" + user.getUserId(), Rating[].class);
@@ -91,17 +90,6 @@ public class UserServiceImpl implements UserService {
         logger.info("{ }", ratingsOfUser);
         user.setRatingOfUser(ratingList);
         return user;
-    }
-
-    public ResponseEntity<User> ratingHotelFallback(String userId, Exception e) {
-        logger.info("Fallback Is Executed Because Service Is Down!", e.getMessage());
-        User user = User.builder().email("dummy@gmail.com")
-                .name("Dummy")
-                .about("This user is created dummy because some service is down")
-                .userId("1234")
-                .build();
-        return new ResponseEntity<>(user, HttpStatus.INTERNAL_SERVER_ERROR);
-
     }
 
 
